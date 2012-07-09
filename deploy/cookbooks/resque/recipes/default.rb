@@ -18,8 +18,7 @@ if ['solo', 'util'].include?(node[:instance_role])
     end
   
 
-  node[:applications].each do |app, data|
-    if app == 'afar'
+    node[:applications].each do |app, data|
       template "/etc/monit.d/resque_#{app}.monitrc" do 
       owner 'root' 
       group 'root' 
@@ -41,35 +40,11 @@ if ['solo', 'util'].include?(node[:instance_role])
         end
       end
 
-      execute "ensure-resque-is-setup-with-monit" do 
-        command %Q{ 
-          monit reload 
-        } 
-      end
-
-      execute "restart-resque" do 
-        command %Q{ 
-          echo "sleep 20 && monit -g #{app}_resque restart all" | at now 
-        }
-      end
+    execute "ensure-resque-is-setup-with-monit" do 
+      epic_fail true
+      command %Q{ 
+      monit reload 
+      } 
     end
   end 
-  
-end
-
-if ['solo', 'app_master', 'app', 'util'].include?(node[:instance_role])
-  node[:applications].each do |app_name, data|
-    # run_for_app(appname) do |app_name, data|
-
-    template "/data/#{app_name}/shared/config/resque.yml" do
-      owner node[:owner_name]
-      group node[:owner_name]
-      mode 0644
-      source "resque.yml.erb"
-      variables({
-                  :db_host => node[:db_host]
-      })
-    end
-
-  end # run on all servers
 end
