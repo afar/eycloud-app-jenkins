@@ -1,0 +1,6 @@
+check process sphinx_<%= @app_name %>_9312
+  with pidfile /var/log/engineyard/sphinx/<%= @app_name %>/searchd.<%= @env %>.pid
+  start program = "/bin/sh -c 'cd /data/<%= @app_name %>/current && RAILS_ENV=<%= @env %> HOME=/home/deploy bundle exec rake thinking_sphinx:start > log/searchd.log 2>&1'" as uid <%= @user %> and gid <%= @user %>
+  stop program = "/bin/sh -c 'cd /data/<%= @app_name %>/current && RAILS_ENV=<%= @env %> bundle exec rake thinking_sphinx:stop > log/searchd.log 2>&1'" as uid <%= @user %> and gid <%= @user %>
+  group sphinx_<%= @app_name %>
+

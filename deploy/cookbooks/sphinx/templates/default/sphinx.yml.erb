@@ -1,0 +1,8 @@
+<%= @node[:environment][:framework_env] %>:
+  address: <%= @host_ip %>
+  port: 9312
+  searchd_log_file: <%= @log_path %>/searchd.<%= @env %>.log
+  query_log_file: <%= @log_path %>/searchd.query.<%= @env %>.log
+  pid_file: <%= @log_path %>/searchd.<%= @env %>.pid
+  searchd_file_path: /data/sphinx/<%= @app_name %>
+

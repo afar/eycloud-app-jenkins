@@ -1,0 +1,639 @@
+<%
+  # these need to match the corresponding application constants
+  SPHINX_TYPE_USER = 1
+  SPHINX_TYPE_QUESTION = 2
+  SPHINX_TYPE_POST = 3
+  SPHINX_TYPE_AFAR_POST = 4
+  
+  QUESTION_QUALITY_SCORE_QUERY = "(1.0 * `questions`.`answers_count`) AS `quality_score`"
+  HIGHLIGHT_QUALITY_SCORE_QUERY = "`highlights`.`quality_score` AS `quality_score`"
+  AFAR_HIGHLIGHT_QUALITY_SCORE_QUERY = "((2.5 * `afar_posts`.`shares_count`) + (1.0 * `afar_posts`.`likes_count`) + (1.0 * `afar_posts`.`comments_count`)) AS `quality_score`"
+  USER_QUALITY_SCORE_QUERY = "0.0 AS `quality_score`"
+%>
+indexer
+{
+}
+
+searchd
+{
+  address = 0.0.0.0
+  port = <%= @sphinx_port || "9312" %>
+  log = <%= @log_path %>/searchd.<%= @env %>.log
+  query_log = <%= @log_path %>/searchd.query.<%= @env %>.log
+  pid_file = <%= @log_path %>/searchd.<%= @env %>.pid
+  max_matches = 10000
+}
+
+# ###############################################################################
+# KEYWORD SEARCH INDEXES
+# ###############################################################################
+
+source answer_text_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `answers`.`id` * 10 + 0 AS `id` , `answers`.`id` AS `answer_id`, `answers`.`text` AS `answer_text`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `answers`.`user_id` AS `user_id`, 1 AS `index_type`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `answers` LEFT JOIN `questions` ON `answers`.`question_id` = `questions`.`id` LEFT JOIN `users` ON `answers`.`user_id` = `users`.`id` WHERE `questions`.`private` = false
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id	
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index answer_text_core
+{
+  source = answer_text_core_0
+  path = <%= @index_path %>/answer_text_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index answer_text
+{
+  type = distributed
+  local = answer_text_core
+}
+
+source post_text_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `highlights`.`id` * 10 + 1 AS `id` , `highlights`.`title` AS `post_title`, `highlights`.`text` AS `post_text`, <%= SPHINX_TYPE_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_POST %>, `highlights`.`id`) AS `object_id`, `highlights`.`user_id` AS `user_id`, 2 AS `index_type`, `places`.`title` AS `place_title`, <%= HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `highlights` LEFT JOIN `users` ON `highlights`.`user_id` = `users`.`id` LEFT JOIN `places` ON `highlights`.`id` = `places`.`placeable_id` AND `places`.`placeable_type` = 'Highlight'
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index post_text_core
+{
+  source = post_text_core_0
+  path = <%= @index_path %>/post_text_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index post_text
+{
+  type = distributed
+  local = post_text_core
+}
+
+source reply_text_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `replies`.`id` * 10 + 2 AS `id` , `replies`.`text` AS `reply_text`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `replies`.`id` AS `reply_id`, `replies`.`user_id` AS `user_id`, 3 AS `index_type`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `replies` LEFT JOIN `users` ON `replies`.`user_id` = `users`.`id` LEFT JOIN `answers` ON `answers`.`id` = `replies`.`answer_id` LEFT JOIN `questions` ON `questions`.`id` = `answers`.`question_id` WHERE `questions`.`private` = false
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index reply_text_core
+{
+  source = reply_text_core_0
+  path = <%= @index_path %>/reply_text_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index reply_text
+{
+  type = distributed
+  local = reply_text_core
+}
+
+source user_person_text_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `users`.`id` * 10 + 3 AS `id` , `users`.`full_name` AS `full_name`, <%= SPHINX_TYPE_USER %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_USER %>, `users`.`id`) AS `object_id`, `users`.`id` AS `user_id`, 4 AS `index_type`, <%= USER_QUALITY_SCORE_QUERY %> FROM `users` WHERE `users`.`type` = 'User::Person' AND `users`.`deactive` = false
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index user_person_text_core
+{
+  source = user_person_text_core_0
+  path = <%= @index_path %>/user_person_text_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index user_person_text
+{
+  type = distributed
+  local = user_person_text_core
+}
+
+source question_content_topic_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `content_topics`.`id` * 10 + 4 AS `id`, GROUP_CONCAT(`topics`.`text`) AS `topics`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `users`.`id` AS `user_id`, 5 AS `index_type`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `content_topics` LEFT JOIN `questions` ON `content_topics`.`content_id` = `questions`.`id` LEFT JOIN `topics` ON `content_topics`.`topic_id` = `topics`.`id` LEFT JOIN `users` ON `questions`.`user_id` = `users`.`id` WHERE `content_topics`.`type` = 'QuestionTopic' AND `questions`.`private` = false GROUP BY `content_topics`.`content_id`;
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index question_content_topic_core
+{
+  source = question_content_topic_core_0
+  path = <%= @index_path %>/question_content_topic_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index question_content_topic
+{
+  type = distributed
+  local = question_content_topic_core
+}
+
+source post_content_topic_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `content_topics`.`id` * 10 + 5 AS `id`, GROUP_CONCAT(`topics`.`text`) AS `topics`, <%= SPHINX_TYPE_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_POST %>, `highlights`.`id`) AS `object_id`, `users`.`id` AS `user_id`, 6 AS `index_type`, <%= HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `content_topics` LEFT JOIN `highlights` ON `content_topics`.`content_id` = `highlights`.`id` LEFT JOIN `topics` ON `content_topics`.`topic_id` = `topics`.`id` LEFT JOIN `users` ON `highlights`.`user_id` = `users`.`id` WHERE `content_topics`.`type` = 'HighlightTopic' GROUP BY `content_topics`.`content_id`
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index post_content_topic_core
+{
+  source = post_content_topic_core_0
+  path = <%= @index_path %>/post_content_topic_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index post_content_topic
+{
+  type = distributed
+  local = post_content_topic_core
+}
+
+source afar_post_text_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `afar_posts`.`id` * 10 + 6 AS `id` , `afar_posts`.`title` AS `afar_post_title`, `afar_posts`.`content` AS `afar_post_content`, `afar_posts`.`by_line` AS `afar_post_by_line`, <%= SPHINX_TYPE_AFAR_POST %> AS `object_type`, 0 AS `user_id`, CONCAT(<%= SPHINX_TYPE_AFAR_POST %>, `afar_posts`.`id`) AS `object_id`, 7 AS `index_type`, <%= AFAR_HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `afar_posts` where `afar_posts`.`article_type` = 'long'
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index afar_post_text_core
+{
+  source = afar_post_text_core_0
+  path = <%= @index_path %>/afar_post_text_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index afar_post_text
+{
+  type = distributed
+  local = afar_post_text_core
+}
+
+source afar_post_content_topic_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `content_topics`.`id` * 10 + 7 AS `id`, GROUP_CONCAT(`topics`.`text`) AS `topics`, <%= SPHINX_TYPE_AFAR_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_AFAR_POST %>, `afar_posts`.`id`) AS `object_id`, 8 AS `index_type`, <%= AFAR_HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `content_topics` LEFT JOIN `afar_posts` ON `content_topics`.`content_id` = `afar_posts`.`id` LEFT JOIN `topics` ON `content_topics`.`topic_id` = `topics`.`id` WHERE `content_topics`.`type` = 'AfarPostTopic' GROUP BY `content_topics`.`content_id`
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index afar_post_content_topic_core
+{
+  source = afar_post_content_topic_core_0
+  path = <%= @index_path %>/afar_post_content_topic_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index afar_post_content_topic
+{
+  type = distributed
+  local = afar_post_content_topic_core
+}
+
+source question_text_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `questions`.`id` * 10 + 8 AS `id` , `questions`.`id` AS `question_id`, `questions`.`text` AS `question_text`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `questions`.`user_id` AS `user_id`, 9 AS `index_type`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `questions` LEFT JOIN `users` ON `questions`.`user_id` = `users`.`id` WHERE `questions`.`private` = false
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = index_type
+  sql_attr_uint = user_id
+  sql_attr_float = quality_score
+}
+
+index question_text_core
+{
+  source = question_text_core_0
+  path = <%= @index_path %>/question_text_core
+  morphology = stem_en
+  html_strip = 1
+  charset_type = utf-8
+}
+
+index question_text
+{
+  type = distributed
+  local = question_text_core
+}
+
+
+
+
+# ###############################################################################
+# GEOSPATIAL SEARCH INDEXES
+# ###############################################################################
+
+source user_current_city_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query = SELECT SQL_NO_CACHE `user_person_profiles`.`id` * 15 + 0 AS `id`, <%= SPHINX_TYPE_USER %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_USER %>, `user_person_profiles`.`user_id`) AS `object_id`, `user_person_profiles`.`user_id` AS `user_id`, 1 AS `index_type`, 'afar' AS `content`, RADIANS(`locations`.`latitude`) AS `latitude`, RADIANS(`locations`.`longitude`) AS `longitude`, <%= USER_QUALITY_SCORE_QUERY %> FROM `user_person_profiles` JOIN `locations` ON `locations`.`id` = `user_person_profiles`.`current_city_id` LEFT JOIN `users` ON `user_person_profiles`.`user_id` = `users`.`id` WHERE `users`.`deactive` = false
+  sql_attr_float = latitude
+  sql_attr_float = longitude
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index user_current_city_core
+{
+  source = user_current_city_core_0
+  path = <%= @index_path %>/user_current_city_core
+  charset_type = utf-8
+}
+
+index user_current_city
+{
+  type = distributed
+  local = user_current_city_core
+}
+
+source post_content_locations_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @geo_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@geo_counter := @geo_counter + 1) * 15 + 1 AS `id`, <%= SPHINX_TYPE_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_POST %>, `highlights`.`id`) AS `object_id`,  `highlights`.`user_id` AS `user_id`, 2 AS `index_type`, 'afar' AS `content`, RADIANS(`places`.`lat`) AS `latitude`, RADIANS(`places`.`lng`) AS `longitude`, <%= HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM  `highlights` JOIN `places` ON (`places`.`placeable_id` = `highlights`.`id`)  AND (`places`.`placeable_type` = 'Highlight') LEFT JOIN `users` ON `highlights`.`user_id` = `users`.`id` 
+  sql_attr_float = latitude
+  sql_attr_float = longitude
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index post_content_locations_core
+{
+  source = post_content_locations_core_0
+  path = <%= @index_path %>/post_content_locations_core
+  charset_type = utf-8
+}
+
+index post_content_locations
+{
+  type = distributed
+  local = post_content_locations_core
+}
+
+source afar_post_content_locations_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @geo_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@geo_counter := @geo_counter + 1) * 15 + 2 AS `id`, <%= SPHINX_TYPE_AFAR_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_AFAR_POST %>, `afar_posts`.`id`) AS `object_id`, 0 AS `user_id`, 3 AS `index_type`, 'afar' AS `content`, RADIANS(`locations`.`latitude`) AS `latitude`, RADIANS(`locations`.`longitude`) AS `longitude`, <%= AFAR_HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `content_locations` JOIN `afar_posts` ON (`afar_posts`.`id` = `content_locations`.`content_id`) AND (`afar_posts`.`article_type` = 'long') JOIN `locations` ON (`locations`.`id` = `content_locations`.`location_id`) WHERE `content_locations`.`type` = 'AfarPostLocation' AND (`locations`.`place_type_code` = 22 OR `locations`.`place_type_code` = 7)
+  sql_attr_float = latitude
+  sql_attr_float = longitude
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index afar_post_content_locations_core
+{
+  source = afar_post_content_locations_core_0
+  path = <%= @index_path %>/afar_post_content_locations_core
+  charset_type = utf-8
+}
+
+index afar_post_content_locations
+{
+  type = distributed
+  local = afar_post_content_locations_core
+}
+
+
+
+source question_content_locations_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @geo_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@geo_counter := @geo_counter + 1) * 15 + 3 AS `id`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `questions`.`user_id` AS `user_id`, 4 AS `index_type`, 'afar' AS `content`, RADIANS(`locations`.`latitude`) AS `latitude`, RADIANS(`locations`.`longitude`) AS `longitude`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `content_locations` JOIN `questions` ON (`questions`.`id` = `content_locations`.`content_id`) JOIN `locations` ON (`locations`.`id` = `content_locations`.`location_id`) LEFT JOIN `users` ON `questions`.`user_id` = `users`.`id` WHERE `content_locations`.`type` = 'QuestionLocation' AND (`locations`.`place_type_code` = 22 OR `locations`.`place_type_code` = 7) AND `questions`.`private` = false
+  sql_attr_float = latitude
+  sql_attr_float = longitude
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index question_content_locations_core
+{
+  source = question_content_locations_core_0
+  path = <%= @index_path %>/question_content_locations_core
+  charset_type = utf-8
+}
+
+index question_content_locations
+{
+  type = distributed
+  local = question_content_locations_core
+}
+
+
+# ###############################################################################
+# PARENT LOCATION SEARCH INDEXES
+# ###############################################################################
+
+source highlights_parent_location_tags_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @location_counter := 0
+  sql_query = SELECT SQL_NO_CACHE  (@location_counter := @location_counter + 1) * 20 + 0 AS `id`, <%= SPHINX_TYPE_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_POST %>, `highlights`.`id`) AS `object_id`, `highlights`.`user_id` AS `user_id`, `places`.`tags` AS `place_tags`, 1 AS `index_type`, <%= HIGHLIGHT_QUALITY_SCORE_QUERY %>  FROM `highlights` JOIN `places` ON (`places`.`placeable_id` = `highlights`.`id`)  AND (`places`.`placeable_type` = 'Highlight') LEFT JOIN `users` ON `highlights`.`user_id` = `users`.`id`
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index highlights_parent_location_tags_core
+{
+  source = highlights_parent_location_tags_core_0
+  path = <%= @index_path %>/highlights_parent_location_tags_core
+  charset_type = utf-8
+}
+
+
+### Person Current City Parents
+
+source user_person_current_city_parents_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @location_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@location_counter := @location_counter + 1) * 20 + 1 AS `id`, <%= SPHINX_TYPE_USER %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_USER %>, `user_person_profiles`.`user_id`) AS `object_id`, `user_person_profiles`.`user_id` AS `user_id`, GROUP_CONCAT(`locations`.`name`) as `parent_locations`, `location_parents`.`parent_location_id` AS `location_id`, 'afar' AS `content`, 3 AS `index_type`, <%= USER_QUALITY_SCORE_QUERY %> FROM `location_parents` JOIN `user_person_profiles` ON (`user_person_profiles`.`current_city_id` = `location_parents`.`location_id`) JOIN `users` ON `user_person_profiles`.`user_id` = `users`.`id` AND `users`.`deactive` = false JOIN `locations` ON `locations`.`id` = `location_parents`.`parent_location_id` GROUP BY `object_id` 
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = user_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index user_person_current_city_parents_core
+{
+  source = user_person_current_city_parents_core_0
+  path = <%= @index_path %>/user_person_current_city_parents_core
+  charset_type = utf-8
+}
+
+
+### Afar Posts
+
+
+source parent_location_afar_posts_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @location_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@location_counter := @location_counter + 1) * 20 + 2 AS `id`, <%= SPHINX_TYPE_AFAR_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_AFAR_POST %>, `afar_posts`.`id`) AS `object_id`, GROUP_CONCAT(`locations`.`name`) as `location_names`, 4 AS `index_type`, <%= AFAR_HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `location_parents` JOIN `content_locations` ON (`content_locations`.`location_id` = `location_parents`.`location_id`) JOIN `afar_posts` ON (`afar_posts`.`id` = `content_locations`.`content_id`) and (`content_locations`.`type` = 'AfarPostLocation') JOIN `locations` ON `locations`.`id` = `location_parents`.`parent_location_id` GROUP BY `object_id`
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index parent_location_afar_posts_core
+{
+  source = parent_location_afar_posts_core_0
+  path = <%= @index_path %>/parent_location_afar_posts_core
+  charset_type = utf-8
+}
+
+
+source location_is_parent_afar_posts_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @location_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@location_counter := @location_counter + 1) * 20 + 3 AS `id`, <%= SPHINX_TYPE_AFAR_POST %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_AFAR_POST %>, `afar_posts`.`id`) AS `object_id`, GROUP_CONCAT(`locations`.`name`) as `location_names`, 4 AS `index_type`, <%= AFAR_HIGHLIGHT_QUALITY_SCORE_QUERY %> FROM `content_locations` JOIN `afar_posts` ON (`afar_posts`.`id` = `content_locations`.`content_id`) and (`content_locations`.`type` = 'AfarPostLocation') JOIN `locations` ON `locations`.`id` = `content_locations`.`location_id` WHERE `locations`.`place_type_code` NOT IN (7,22) GROUP BY `object_id`
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index location_is_parent_afar_posts_core
+{
+  source = location_is_parent_afar_posts_core_0
+  path = <%= @index_path %>/location_is_parent_afar_posts_core
+  charset_type = utf-8
+}
+
+
+
+##Questions Parent Location
+
+source parent_location_questions_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @location_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@location_counter := @location_counter + 1) * 20 + 4 AS `id`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `location_parents`.`parent_location_id` AS `location_id`, GROUP_CONCAT(`locations`.`name`) as `parent_location_names`, 'afar' AS `content`, 6 AS `index_type`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `location_parents` JOIN `content_locations` ON (`content_locations`.`location_id` = `location_parents`.`location_id`) AND `content_locations`.`type` = 'QuestionLocation' JOIN `questions` ON (`questions`.`id` = `content_locations`.`content_id`) AND `questions`.`private` = false JOIN `locations` ON `locations`.`id` = `location_parents`.`parent_location_id` GROUP BY `object_id
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index parent_location_questions_core
+{
+  source = parent_location_questions_core_0
+  path = <%= @index_path %>/parent_location_questions_core
+  charset_type = utf-8
+}
+
+
+source location_is_parent_questions_core_0
+{
+  type = mysql
+  sql_host = <%= @db_host %>
+  sql_user = <%= @db_user %>
+  sql_pass = <%= @db_pwd %> 
+  sql_db = <%= @db_name %>
+  <%= "sql_sock = #{@db_sock}" unless @db_sock.blank? %> 
+  sql_query_pre = SET NAMES utf8
+  sql_query_pre = SET TIME_ZONE = '+0:00'
+  sql_query_pre = SET @location_counter := 0
+  sql_query = SELECT SQL_NO_CACHE (@location_counter := @location_counter + 1) * 20 + 5 AS `id`, <%= SPHINX_TYPE_QUESTION %> AS `object_type`, CONCAT(<%= SPHINX_TYPE_QUESTION %>, `questions`.`id`) AS `object_id`, `content_locations`.`location_id` AS `location_id`, GROUP_CONCAT(`locations`.`name`) as `location_names`, 'afar' AS `content`, 6 AS `index_type`, <%= QUESTION_QUALITY_SCORE_QUERY %> FROM `content_locations` JOIN `questions` ON (`questions`.`id` = `content_locations`.`content_id`) AND `questions`.`private` = false JOIN `locations` ON `locations`.`id` = `content_locations`.`location_id` WHERE `content_locations`.`type` = 'QuestionLocation' AND `locations`.`place_type_code` NOT IN (7,22) GROUP BY `object_id
+  sql_attr_uint = object_type
+  sql_attr_uint = object_id
+  sql_attr_uint = index_type
+  sql_attr_float = quality_score
+}
+
+index location_is_parent_questions_core
+{
+  source = location_is_parent_questions_core_0
+  path = <%= @index_path %>/location_is_parent_questions_core
+  charset_type = utf-8
+}
