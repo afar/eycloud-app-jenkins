@@ -19,6 +19,7 @@ GEM
       treetop (~> 1.4.9)
       uuidtools
     erubis (2.7.0)
+    ey (0.0.8)
     eycloud-helper-common (0.2.1)
       chef (~> 0.10)
       yajl-ruby
@@ -60,6 +61,7 @@ PLATFORMS
 
 DEPENDENCIES
   chef
+  ey
   eycloud-helper-common
   rack
   rake
