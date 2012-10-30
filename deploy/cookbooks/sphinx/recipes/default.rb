@@ -48,80 +48,76 @@ if ['solo', 'util'].include?(node[:instance_role])
     end
   end
 
-  # be sure to replace "app_name" with the name of your application.
-  run_for_app(appname) do |app_name, data|
-  # node[:applications].each do |app_name, data|
-    if app_name == 'afar'
-      ey_cloud_report "Sphinx" do
-        message "configuring #{flavor}"
-      end
+  ey_cloud_report "Sphinx" do
+    message "configuring #{flavor}"
+  end
 
-      directory "/data/#{app_name}/shared/sphinx" do
-        owner node[:owner_name]
-        group node[:owner_name]
-        mode 0755
-      end
+  directory "/data/#{app_name}/shared/sphinx" do
+    owner node[:owner_name]
+    group node[:owner_name]
+    mode 0755
+  end
 
-      directory "/var/run/sphinx" do
-        owner node[:owner_name]
-        group node[:owner_name]
-        mode 0755
-      end
+  directory "/var/run/sphinx" do
+    owner node[:owner_name]
+    group node[:owner_name]
+    mode 0755
+  end
 
-      directory "/var/log/engineyard/sphinx/#{app_name}" do
-        recursive true
-        owner node[:owner_name]
-        group node[:owner_name]
-        mode 0755
-      end
-    
-      directory "/data/sphinx/#{app_name}" do
-        recursive true
-        owner node[:owner_name]
-        group node[:owner_name]
-        mode 0755
-      end
+  directory "/var/log/engineyard/sphinx/#{app_name}" do
+    recursive true
+    owner node[:owner_name]
+    group node[:owner_name]
+    mode 0755
+  end
 
-      remote_file "/etc/logrotate.d/sphinx" do
-        owner "root"
-        group "root"
-        mode 0755
-        source "sphinx.logrotate"
-        backup false
-        action :create
-      end
+  directory "/data/sphinx/#{app_name}" do
+    recursive true
+    owner node[:owner_name]
+    group node[:owner_name]
+    mode 0755
+  end
 
-      template "/etc/monit.d/sphinx.#{app_name}.monitrc" do
-        source "sphinx.monitrc.erb"
-        owner 'root'
-        group 'root'
-        mode 0644
-        variables({
-                    :app_name => app_name,
-                    :user => node[:owner_name],
-                    :flavor => flavor,
-                    :env => node[:environment][:framework_env]
-        })
-      end
+  remote_file "/etc/logrotate.d/sphinx" do
+    owner "root"
+    group "root"
+    mode 0755
+    source "sphinx.logrotate"
+    backup false
+    action :create
+  end
 
-      template "/data/#{app_name}/shared/config/#{node[:environment][:framework_env]}.sphinx.conf" do
-        source "base.sphinx.conf.erb"
-        owner node[:owner_name]
-        group node[:owner_name]
-        mode 0644
-        variables({
-                    :index_path => "/data/sphinx/#{app_name}",
-                    :log_path => "/var/log/engineyard/sphinx/#{app_name}",
-                    :app_name => app_name,
-                    :user => node[:owner_name],
-                    :env => node[:environment][:framework_env],
-                    :db_host => node[:db_host],
-                    :db_name => node[:engineyard][:environment][:apps].select{|v| v[:name] == app_name}.first['database_name'],
-                    :db_user => node[:owner_name],
-                    :db_pwd => node[:owner_pass],
-                    :flavor => flavor
-        })
-      end
+  template "/etc/monit.d/sphinx.#{app_name}.monitrc" do
+    source "sphinx.monitrc.erb"
+    owner 'root'
+    group 'root'
+    mode 0644
+    variables({
+                :app_name => app_name,
+                :user => node[:owner_name],
+                :flavor => flavor,
+                :env => node[:environment][:framework_env]
+    })
+  end
+
+  template "/data/#{app_name}/shared/config/#{node[:environment][:framework_env]}.sphinx.conf" do
+    source "base.sphinx.conf.erb"
+    owner node[:owner_name]
+    group node[:owner_name]
+    mode 0644
+    variables({
+                :index_path => "/data/sphinx/#{app_name}",
+                :log_path => "/var/log/engineyard/sphinx/#{app_name}",
+                :app_name => app_name,
+                :user => node[:owner_name],
+                :env => node[:environment][:framework_env],
+                :db_host => node[:db_host],
+                :db_name => node[:engineyard][:environment][:apps].select{|v| v[:name] == app_name}.first['database_name'],
+                :db_user => node[:owner_name],
+                :db_pwd => node[:owner_pass],
+                :flavor => flavor
+    })
+  end
 
       # rake tasks should not be part of chef recipes - rake does not run yet since dependent on other recipes
       # ey_cloud_report "reindexing #{flavor}" do
@@ -140,8 +136,6 @@ if ['solo', 'util'].include?(node[:instance_role])
 
       execute "monit quit"
 
-    end # end of app_name if
-  end # end of run_for_app
 
 end# end of if statement -- only run on main app server
 
