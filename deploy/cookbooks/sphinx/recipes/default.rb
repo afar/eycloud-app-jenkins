@@ -47,94 +47,8 @@ if ['solo', 'util'].include?(node[:instance_role])
       EOCODE
     end
   end
-
-  ey_cloud_report "Sphinx" do
-    message "configuring #{flavor}"
-  end
-
-  directory "/data/#{app_name}/shared/sphinx" do
-    owner node[:owner_name]
-    group node[:owner_name]
-    mode 0755
-  end
-
-  directory "/var/run/sphinx" do
-    owner node[:owner_name]
-    group node[:owner_name]
-    mode 0755
-  end
-
-  directory "/var/log/engineyard/sphinx/#{app_name}" do
-    recursive true
-    owner node[:owner_name]
-    group node[:owner_name]
-    mode 0755
-  end
-
-  directory "/data/sphinx/#{app_name}" do
-    recursive true
-    owner node[:owner_name]
-    group node[:owner_name]
-    mode 0755
-  end
-
-  remote_file "/etc/logrotate.d/sphinx" do
-    owner "root"
-    group "root"
-    mode 0755
-    source "sphinx.logrotate"
-    backup false
-    action :create
-  end
-
-  template "/etc/monit.d/sphinx.#{app_name}.monitrc" do
-    source "sphinx.monitrc.erb"
-    owner 'root'
-    group 'root'
-    mode 0644
-    variables({
-                :app_name => app_name,
-                :user => node[:owner_name],
-                :flavor => flavor,
-                :env => node[:environment][:framework_env]
-    })
-  end
-
-  template "/data/#{app_name}/shared/config/#{node[:environment][:framework_env]}.sphinx.conf" do
-    source "base.sphinx.conf.erb"
-    owner node[:owner_name]
-    group node[:owner_name]
-    mode 0644
-    variables({
-                :index_path => "/data/sphinx/#{app_name}",
-                :log_path => "/var/log/engineyard/sphinx/#{app_name}",
-                :app_name => app_name,
-                :user => node[:owner_name],
-                :env => node[:environment][:framework_env],
-                :db_host => node[:db_host],
-                :db_name => node[:engineyard][:environment][:apps].select{|v| v[:name] == app_name}.first['database_name'],
-                :db_user => node[:owner_name],
-                :db_pwd => node[:owner_pass],
-                :flavor => flavor
-    })
-  end
-
-      # rake tasks should not be part of chef recipes - rake does not run yet since dependent on other recipes
-      # ey_cloud_report "reindexing #{flavor}" do
-      #   message "indexing #{flavor}"
-      # end
-      #
-      # execute "#{flavor} reindex" do
-      #   command "rake #{flavor}:reindex"
-      #   user node[:owner_name]
-      #   environment({
-      #                 'HOME' => "/home/#{node[:owner_name]}",
-      #                 'RAILS_ENV' => node[:environment][:framework_env]
-      #   })
-      #   cwd "/data/#{app_name}/current"
-      # end
-
-      execute "monit quit"
+  
+  execute "monit quit"
 
 
 end# end of if statement -- only run on main app server
@@ -144,6 +58,57 @@ if ['solo', 'app_master', 'app_slave', 'util'].include?(node[:instance_role])
   node[:applications].each do |app_name, data|
     
     
+    ey_cloud_report "Sphinx" do
+      message "configuring #{flavor}"
+    end
+
+    directory "/data/#{app_name}/shared/sphinx" do
+      owner node[:owner_name]
+      group node[:owner_name]
+      mode 0755
+    end
+
+    directory "/var/run/sphinx" do
+      owner node[:owner_name]
+      group node[:owner_name]
+      mode 0755
+    end
+
+    directory "/var/log/engineyard/sphinx/#{app_name}" do
+      recursive true
+      owner node[:owner_name]
+      group node[:owner_name]
+      mode 0755
+    end
+
+    directory "/data/sphinx/#{app_name}" do
+      recursive true
+      owner node[:owner_name]
+      group node[:owner_name]
+      mode 0755
+    end
+
+    remote_file "/etc/logrotate.d/sphinx" do
+      owner "root"
+      group "root"
+      mode 0755
+      source "sphinx.logrotate"
+      backup false
+      action :create
+    end
+
+    template "/etc/monit.d/sphinx.#{app_name}.monitrc" do
+      source "sphinx.monitrc.erb"
+      owner 'root'
+      group 'root'
+      mode 0644
+      variables({
+                  :app_name => app_name,
+                  :user => node[:owner_name],
+                  :flavor => flavor,
+                  :env => node[:environment][:framework_env]
+      })
+    end
     
     template "/data/#{app_name}/shared/config/sphinx.yml" do
       owner node[:owner_name]
