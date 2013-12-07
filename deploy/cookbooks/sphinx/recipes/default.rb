@@ -32,8 +32,8 @@ cron_interval = nil #If this is not set your data will NOT be indexed
 
 if ['solo', 'util'].include?(node[:instance_role])
 
-  # install sphinx 2.0.4
-  unless `searchd --version`.include?('2.0.4')
+  # install sphinx 2.0.9
+  unless `searchd --version`.include?('2.0.9')
     src_dir = "/usr/local/src"
 
     directory src_dir do
@@ -42,8 +42,8 @@ if ['solo', 'util'].include?(node[:instance_role])
       mode 0755
     end
 
-    remote_file "#{src_dir}/sphinx-2.0.4.tar.gz" do
-      source "http://sphinxsearch.com/files/sphinx-2.0.4-release.tar.gz"
+    remote_file "#{src_dir}/sphinx-2.0.9.tar.gz" do
+      source "http://sphinxsearch.com/files/sphinx-2.0.9-release.tar.gz"
       owner "root"
       group "root"
     end
@@ -52,13 +52,13 @@ if ['solo', 'util'].include?(node[:instance_role])
       user "root"
       cwd src_dir
       code <<-EOCODE
-        tar -xzf sphinx-2.0.4.tar.gz
-        cd sphinx-2.0.4-release
+        tar -xzf sphinx-2.0.9.tar.gz
+        cd sphinx-2.0.9-release
         ./configure && make && make install
       EOCODE
     end
   end
-  
+
   execute "monit quit"
 
 
@@ -155,10 +155,10 @@ if utility_name
         })
       end
 
-      gem_package "bundler" do 
-        source "http://rubygems.org" 
-        action :install 
-        version "1.0.21" 
+      gem_package "bundler" do
+        source "http://rubygems.org"
+        action :install
+        version "1.0.21"
       end
 
       execute "sphinx config" do
@@ -263,10 +263,10 @@ else
         })
       end
 
-      gem_package "bundler" do 
-        source "http://rubygems.org" 
-        action :install 
-        version "1.0.21" 
+      gem_package "bundler" do
+        source "http://rubygems.org"
+        action :install
+        version "1.0.21"
       end
 
 
