@@ -19,7 +19,7 @@ eyapi get \
   string "jenkins/https/ssl/password" default "" \
   string "jenkins/admin/user" default "admin" \
 
-eyapi get string "jenkins/home" default "/home/${jenkins_user}"
+eyapi get string "jenkins/home" default "/data/home/${jenkins_user}"
 
 # Notes:
 #   -1 to a port in order to disable.

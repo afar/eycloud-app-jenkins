@@ -165,7 +165,7 @@ if utility_name
         command "bundle exec rake #{flavor}:configure"
         user node[:owner_name]
         environment({
-          'HOME' => "/home/#{node[:owner_name]}",
+          'HOME' => "/data/home/#{node[:owner_name]}",
           'RAILS_ENV' => node[:environment][:framework_env]
         })
         cwd "/data/#{app_name}/current"
@@ -179,7 +179,7 @@ if utility_name
         command "bundle exec rake #{flavor}:index"
         user node[:owner_name]
         environment({
-          'HOME' => "/home/#{node[:owner_name]}",
+          'HOME' => "/data/home/#{node[:owner_name]}",
           'RAILS_ENV' => node[:environment][:framework_env]
         })
         cwd "/data/#{app_name}/current"
@@ -274,7 +274,7 @@ else
         command "bundle exec rake #{flavor}:configure"
         user node[:owner_name]
         environment({
-          'HOME' => "/home/#{node[:owner_name]}",
+          'HOME' => "/data/home/#{node[:owner_name]}",
           'RAILS_ENV' => node[:environment][:framework_env]
         })
         cwd "/data/#{app_name}/current"
@@ -288,7 +288,7 @@ else
         command "bundle exec rake #{flavor}:index"
         user node[:owner_name]
         environment({
-          'HOME' => "/home/#{node[:owner_name]}",
+          'HOME' => "/data/home/#{node[:owner_name]}",
           'RAILS_ENV' => node[:environment][:framework_env]
         })
         cwd "/data/#{app_name}/current"

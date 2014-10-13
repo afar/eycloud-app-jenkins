@@ -13,12 +13,12 @@ eyapi get \
   string "jenkins/user" default "jenkins"
 
 eyapi get string "jenkins/home" \
-  default "/home/${jenkins_user}"
+  default "/data/home/${jenkins_user}"
 
 typeset _path
 
 user create unless exists name "${jenkins_user}" \
-  shell "/bin/bash" home "/home/${jenkins_user}" group "${jenkins_user}"
+  shell "/bin/bash" home "/data/home/${jenkins_user}" group "${jenkins_user}"
 
 path create recursive "${jenkins_home}" \
   owner "${jenkins_user}:${jenkins_user}"
@@ -67,12 +67,12 @@ done
 path chown ${jenkins_user}:${jenkins_user} recursively "${jenkins_home}/plugins"
 
 typeset key_file
-key_file="/home/${jenkins_user}/.ssh/id_rsa"
+key_file="/data/home/${jenkins_user}/.ssh/id_rsa"
 path create ${key_file%/*}
 if ! file exists "${key_file}"
 then
   ssh-keygen -t rsa -b 2048 -f ${key_file} -N '' -C 'Jenkins CI Server.'
 fi
 
-path chown ${jenkins_user}:${jenkins_user} recursively "/home/${jenkins_user}"
+path chown ${jenkins_user}:${jenkins_user} recursively "/data/home/${jenkins_user}"
 
