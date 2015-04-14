@@ -1,0 +1,2 @@
+defaults:
+	ignore_database_adapter_warning: true
