@@ -1,4 +1,4 @@
-sudo 'chmod a+r /etc/chef-custom/dna.json'
+sudo 'chmod a+rw /etc/chef-custom/dna.json'
 
 # Set up a chef 0.10 dna.json file (for stack-v1 + stack-v2)
 # TODO does this run on non-app-master/solo?
