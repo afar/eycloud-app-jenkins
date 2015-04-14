@@ -1,4 +1,5 @@
 sudo 'chmod a+rw /etc/chef-custom/dna.json'
+sudo 'chown deploy.deploy /etc/chef-custom/dna.json'
 sudo 'chmod a+rw /etc/chef-custom'
 
 # Set up a chef 0.10 dna.json file (for stack-v1 + stack-v2)
