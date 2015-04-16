@@ -1,14 +1,14 @@
 
-require_recipe 'sm'
+include_recipe 'sm'
 
-require_recipe 'eyapi'
+include_recipe 'eyapi'
 
-require_recipe "resque"
+include_recipe "resque"
 
-require_recipe "sphinx"
+include_recipe "sphinx"
 
-require_recipe 'jenkins'
+include_recipe 'jenkins'
 
-require_recipe 'qt-webkit'
+include_recipe 'qt-webkit'
 
-require_recipe 'xorg-server'
+include_recipe 'xorg-server'
