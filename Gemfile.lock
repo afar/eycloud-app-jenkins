@@ -93,5 +93,6 @@ DEPENDENCIES
   chef
   engineyard (~> 2.3)
   eycloud-helper-common
+  moneta (>= 0.7.0)
   rack
   rake
