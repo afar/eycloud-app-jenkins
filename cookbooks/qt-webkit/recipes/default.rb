@@ -2,4 +2,4 @@
 # Cookbook Name:: qt-webkit
 # Recipe:: default
 #
-install_recipe 'qt-webkit::install'
+include_recipe 'qt-webkit::install'

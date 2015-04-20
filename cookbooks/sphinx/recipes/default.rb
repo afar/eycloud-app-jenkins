@@ -70,7 +70,7 @@ else
           message "configuring #{flavor}"
         end
 
-        directory "/data/afar/shared/sphinx" do
+        directory "/data/#{app_name}/shared/sphinx" do
           owner node[:owner_name]
           group node[:owner_name]
           mode 0755
@@ -119,32 +119,6 @@ else
                     })
         end
 
-        template "/data/#{app_name}/shared/config/#{node[:environment][:framework_env]}.sphinx.conf" do
-          source "base.sphinx.conf.erb"
-          owner node[:owner_name]
-          group node[:owner_name]
-          mode 0644
-
-          db_host = if node[:environment][:name] == 'production' || node[:environment][:name] == 'production_v2'
-                      node[:engineyard][:environment][:instances].select{ |i| i['role'] == 'db_slave' }.first['public_hostname']
-                    else
-                      node[:db_host]
-                    end
-
-          variables({
-                        :index_path => "/data/sphinx/#{app_name}",
-                        :log_path => "/var/log/engineyard/sphinx/#{app_name}",
-                        :app_name => app_name,
-                        :user => node[:owner_name],
-                        :env => node[:environment][:framework_env],
-                        :db_host => db_host,
-                        :db_name => node[:engineyard][:environment][:apps].select{|v| v[:name] == app_name}.first['database_name'],
-                        :db_user => node[:owner_name],
-                        :db_pwd => node[:owner_pass],
-                        :flavor => flavor
-                    })
-        end
-
         template "/data/#{app_name}/shared/config/sphinx.yml" do
           owner node[:owner_name]
           group node[:owner_name]
@@ -164,24 +138,22 @@ else
           version "1.0.21"
         end
 
-# NOTE: DON'T CONFIG SPHINX. WE BUILD sphinx.conf MANUALLY
-#        execute "sphinx config" do
-#          command "bundle exec rake #{flavor_abbr}:configure"
-#          user node[:owner_name]
-#          environment({
-#                          'HOME' => "/home/#{node[:owner_name]}",
-#                          'RAILS_ENV' => node[:environment][:framework_env]
-#                      })
-#          cwd "/data/#{app_name}/current"
-#        end
+       execute "sphinx config" do
+         command "bundle exec rake #{flavor_abbr}:configure"
+         user node[:owner_name]
+         environment({
+                         'HOME' => "/home/#{node[:owner_name]}",
+                         'RAILS_ENV' => node[:environment][:framework_env]
+                     })
+         cwd "/data/#{app_name}/current"
+       end
 
-# NOTE: USE REINDEX TO AVOID CONFIGURING SPHINX. WE BUILD sphinx.conf MANUALLY
-        ey_cloud_report "reindexing #{flavor}" do
-          message "reindexing #{flavor}"
+        ey_cloud_report "indexing #{flavor}" do
+          message "indexing #{flavor}"
         end
 
-        execute "#{flavor} reindex" do
-          command "bundle exec rake #{flavor_abbr}:reindex"
+        execute "#{flavor} index" do
+          command "bundle exec rake #{flavor_abbr}:index"
           user node[:owner_name]
           environment({
                           'HOME' => "/home/#{node[:owner_name]}",
@@ -192,19 +164,18 @@ else
 
         execute "monit reload"
 
-# NOTE: THIS IS RUN FROM RESQUE_SCHEDULER.YML
-#        if cron_interval
-#          cron "sphinx reindex" do
-#            action  :create
-#            minute  "*/#{cron_interval}"
-#            hour    '*'
-#            day     '*'
-#            month   '*'
-#            weekday '*'
-#            command "cd /data/#{app_name}/current && RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:reindex"
-#            user node[:owner_name]
-#          end
-#        end
+       if cron_interval
+         cron "sphinx index" do
+           action  :create
+           minute  "*/#{cron_interval}"
+           hour    '*'
+           day     '*'
+           month   '*'
+           weekday '*'
+           command "cd /data/#{app_name}/current && RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
+           user node[:owner_name]
+         end
+       end
       end
     end
   else
@@ -214,7 +185,7 @@ else
           message "configuring #{flavor}"
         end
 
-        directory "/data/afar/shared/sphinx" do
+        directory "/data/#{app_name}/shared/sphinx" do
           owner node[:owner_name]
           group node[:owner_name]
           mode 0755
@@ -262,32 +233,6 @@ else
                     })
         end
 
-        template "/data/#{app_name}/shared/config/#{node[:environment][:framework_env]}.sphinx.conf" do
-          source "base.sphinx.conf.erb"
-          owner node[:owner_name]
-          group node[:owner_name]
-          mode 0644
-
-          db_host = if node[:environment][:name] == 'production' || node[:environment][:name] == 'production_v2'
-                      node[:engineyard][:environment][:instances].select{ |i| i['role'] == 'db_slave' }.first['public_hostname']
-                    else
-                      node[:db_host]
-                    end
-
-          variables({
-                        :index_path => "/data/sphinx/#{app_name}",
-                        :log_path => "/var/log/engineyard/sphinx/#{app_name}",
-                        :app_name => app_name,
-                        :user => node[:owner_name],
-                        :env => node[:environment][:framework_env],
-                        :db_host => db_host,
-                        :db_name => node[:engineyard][:environment][:apps].select{|v| v[:name] == app_name}.first['database_name'],
-                        :db_user => node[:owner_name],
-                        :db_pwd => node[:owner_pass],
-                        :flavor => flavor
-                    })
-        end
-
         template "/data/#{app_name}/shared/config/sphinx.yml" do
           owner node[:owner_name]
           group node[:owner_name]
@@ -308,24 +253,22 @@ else
         end
 
 
-# NOTE: DON'T CONFIG SPHINX. WE BUILD sphinx.conf MANUALLY
-#        execute "sphinx config" do
-#          command "bundle exec rake #{flavor_abbr}:configure"
-#          user node[:owner_name]
-#          environment({
-#                          'HOME' => "/home/#{node[:owner_name]}",
-#                          'RAILS_ENV' => node[:environment][:framework_env]
-#                      })
-#          cwd "/data/#{app_name}/current"
-#        end
+       execute "sphinx config" do
+         command "bundle exec rake #{flavor_abbr}:configure"
+         user node[:owner_name]
+         environment({
+                         'HOME' => "/home/#{node[:owner_name]}",
+                         'RAILS_ENV' => node[:environment][:framework_env]
+                     })
+         cwd "/data/#{app_name}/current"
+       end
 
-# NOTE: USE REINDEX TO AVOID CONFIGURING SPHINX. WE BUILD sphinx.conf MANUALLY
-        ey_cloud_report "reindexing #{flavor}" do
-          message "reindexing #{flavor}"
+        ey_cloud_report "indexing #{flavor}" do
+          message "indexing #{flavor}"
         end
 
-        execute "#{flavor} reindex" do
-          command "bundle exec rake #{flavor_abbr}:reindex"
+        execute "#{flavor} index" do
+          command "bundle exec rake #{flavor_abbr}:index"
           user node[:owner_name]
           environment({
                           'HOME' => "/home/#{node[:owner_name]}",
@@ -336,19 +279,18 @@ else
 
         execute "monit reload"
 
-# NOTE: THIS IS RUN FROM RESQUE_SCHEDULER.YML
-#        if cron_interval
-#          cron "sphinx reindex" do
-#            action  :create
-#            minute  "*/#{cron_interval}"
-#            hour    '*'
-#            day     '*'
-#            month   '*'
-#            weekday '*'
-#            command "cd /data/#{app_name}/current && RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:reindex"
-#            user node[:owner_name]
-#          end
-#        end
+       if cron_interval
+         cron "sphinx reindex" do
+           action  :create
+           minute  "*/#{cron_interval}"
+           hour    '*'
+           day     '*'
+           month   '*'
+           weekday '*'
+           command "cd /data/#{app_name}/current && RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
+           user node[:owner_name]
+         end
+       end
       end
     end
   end
