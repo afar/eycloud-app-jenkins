@@ -9,6 +9,7 @@ appname = "jenkins"
 # Uncomment the flavor of sphinx you want to use
 flavor = "thinking_sphinx"
 #flavor = "ultrasphinx"
+flavor_abbr = "ts"
 
 # If you want to install on a specific utility instance rather than
 # all application instances, uncomment and set the utility instance

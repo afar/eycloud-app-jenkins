@@ -1,0 +1,1 @@
+install_recipe 'sm::install'

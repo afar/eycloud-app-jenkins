@@ -8,6 +8,5 @@
 # end
 
 package 'x11-base/xorg-server' do
-  version node[:xorg_server_version]
   action :install
 end
