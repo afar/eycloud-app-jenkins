@@ -1,3 +1,9 @@
+require 'rubygems'
+require 'bundler'
+require 'thinking_sphinx'
+
+Rake::Task.define_task(:environment)
+
 begin
   require 'thinking_sphinx/tasks'
 rescue LoadError

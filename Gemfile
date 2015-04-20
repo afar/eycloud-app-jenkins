@@ -2,11 +2,8 @@ source "https://rubygems.org"
 
 gem "rack"
 gem "rake"
-gem "chef"
-gem 'engineyard', '~> 2.3'
-gem "eycloud-helper-common"
-
-gem 'moneta', '~> 0.6.0'
+gem 'engineyard'
+gem 'mysql2'
 
 # this is a hack to compensate for a double bug
 # by Riddle infering version, and EngineYard not providing version
