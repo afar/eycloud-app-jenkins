@@ -1,3 +1,5 @@
+require 'json'
+
 sudo 'chown deploy.deploy /etc/chef-custom/dna.json'
 
 # Set up a chef 0.10 dna.json file (for stack-v1 + stack-v2)
