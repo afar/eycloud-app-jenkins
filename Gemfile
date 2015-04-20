@@ -3,7 +3,6 @@ source "https://rubygems.org"
 gem "rack"
 gem "rake"
 gem 'engineyard'
-gem "eycloud-helper-common"
 gem 'mysql2'
 
 # this is a hack to compensate for a double bug
