@@ -138,8 +138,14 @@ else
           version "1.0.21"
         end
 
+        gem_package "rake" do
+          source "http://rubygems.org"
+          action :install
+        end
+
        execute "sphinx config" do
-         command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} && bundle exec rake #{flavor_abbr}:configure"
+         command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle"
+         command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:configure"
          user node[:owner_name]
          environment({
                          'HOME' => "/home/#{node[:owner_name]}",
@@ -153,7 +159,7 @@ else
         end
 
         execute "#{flavor} index" do
-          command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} && bundle exec rake #{flavor_abbr}:index"
+          command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
           user node[:owner_name]
           environment({
                           'HOME' => "/home/#{node[:owner_name]}",
@@ -172,7 +178,7 @@ else
            day     '*'
            month   '*'
            weekday '*'
-           command "cd /data/#{app_name}/current && RAILS_ENV=#{node[:environment][:framework_env]} && bundle exec rake #{flavor_abbr}:index"
+           command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
            user node[:owner_name]
          end
        end
@@ -254,7 +260,8 @@ else
 
 
        execute "sphinx config" do
-         command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} && bundle exec rake #{flavor_abbr}:configure"
+         command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle"
+         command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:configure"
          user node[:owner_name]
          environment({
                          'HOME' => "/home/#{node[:owner_name]}",
@@ -268,7 +275,7 @@ else
         end
 
         execute "#{flavor} index" do
-          command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} && bundle exec rake #{flavor_abbr}:index"
+          command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
           user node[:owner_name]
           environment({
                           'HOME' => "/home/#{node[:owner_name]}",
@@ -287,7 +294,7 @@ else
            day     '*'
            month   '*'
            weekday '*'
-           command "cd /data/#{app_name}/current && RAILS_ENV=#{node[:environment][:framework_env]} && bundle exec rake #{flavor_abbr}:index"
+           command "cd /data/#{app_name}/current && PATH=$PATH:~/.gem/ruby/2.1.0/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
            user node[:owner_name]
          end
        end
