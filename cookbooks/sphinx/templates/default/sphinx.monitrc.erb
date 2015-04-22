@@ -1,5 +1,5 @@
 check process sphinx_<%= @app_name %>_9313
   with pidfile /var/run/sphinx/<%= @app_name %>.pid
-  start program = "/engineyard/bin/<%= @flavor %>_searchd <%= @app_name %> start <%= @env %>" as uid <%= @user %> and gid <%= @user %> with timeout 90 seconds
-  stop program = "/engineyard/bin/<%= @flavor %>_searchd <%= @app_name %> stop <%= @env %>" as uid <%= @user %> and gid <%= @user %> with timeout 90 seconds
+  start program = "/bin/sh -c 'cd /data/<%= @app_name %>/current && RAILS_ENV=<%= @env %> HOME=/home/deploy /usr/local/bin/bundle exec rake ts:start > log/searchd.log 2>&1'" as uid <%= @user %> and gid <%= @user %> with timeout 90 seconds
+  stop program = "/bin/sh -c 'cd /data/<%= @app_name %>/current && RAILS_ENV=<%= @env %> HOME=/home/deploy /usr/local/bin/bundle exec rake ts:stop > log/searchd.log 2>&1'" as uid <%= @user %> and gid <%= @user %> with timeout 90 seconds
   group sphinx_<%= @app_name %>
