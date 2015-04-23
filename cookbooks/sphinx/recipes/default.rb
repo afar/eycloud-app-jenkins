@@ -49,7 +49,7 @@ else
           mode 0755
         end
 
-        template "/data/#{app_name}/shared/config/thinking_sphinx.yml" do
+        template "/data/#{app_name}/shared/config/xthinking_sphinx.yml" do
           owner node[:owner_name]
           group node[:owner_name]
           mode 0644
@@ -119,7 +119,7 @@ else
                     })
         end
 
-        template "/data/#{app_name}/shared/config/thinking_sphinx.yml" do
+        template "/data/#{app_name}/shared/config/xthinking_sphinx.yml" do
           owner node[:owner_name]
           group node[:owner_name]
           mode 0644
@@ -145,7 +145,7 @@ else
 
        execute "sphinx config" do
          command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle"
-         command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:configure"
+         command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=test bundle exec rake #{flavor_abbr}:configure"
          user node[:owner_name]
          environment({
                          'HOME' => "/home/#{node[:owner_name]}",
@@ -159,7 +159,7 @@ else
         end
 
         execute "#{flavor} index" do
-          command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
+          command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=test bundle exec rake #{flavor_abbr}:index"
           user node[:owner_name]
           environment({
                           'HOME' => "/home/#{node[:owner_name]}",
@@ -178,7 +178,7 @@ else
            day     '*'
            month   '*'
            weekday '*'
-           command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
+           command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=test bundle exec rake #{flavor_abbr}:index"
            user node[:owner_name]
          end
        end
@@ -239,7 +239,7 @@ else
                     })
         end
 
-        template "/data/#{app_name}/shared/config/thinking_sphinx.yml" do
+        template "/data/#{app_name}/shared/config/xthinking_sphinx.yml" do
           owner node[:owner_name]
           group node[:owner_name]
           mode 0644
@@ -265,7 +265,7 @@ else
 
        execute "sphinx config" do
          command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle"
-         command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:configure"
+         command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=test bundle exec rake #{flavor_abbr}:configure"
          user node[:owner_name]
          environment({
                          'HOME' => "/home/#{node[:owner_name]}",
@@ -279,7 +279,7 @@ else
         end
 
         execute "#{flavor} index" do
-          command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
+          command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=test bundle exec rake #{flavor_abbr}:index"
           user node[:owner_name]
           environment({
                           'HOME' => "/home/#{node[:owner_name]}",
@@ -298,7 +298,7 @@ else
            day     '*'
            month   '*'
            weekday '*'
-           command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=#{node[:environment][:framework_env]} bundle exec rake #{flavor_abbr}:index"
+           command "cd /data/#{app_name}/current && PATH=$PATH:/usr/local/bin RAILS_ENV=test bundle exec rake #{flavor_abbr}:index"
            user node[:owner_name]
          end
        end
